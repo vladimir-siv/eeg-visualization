@@ -56,8 +56,6 @@ namespace EEGVisualization.Scripts
 		private vec2 ShapeRotationAngle { get; set; } = new vec2(0.0f, 0.0f);
 		private float Scroll { get; set; } = 0.0f;
 		private vec2 LastMousePosition { get; set; } = new vec2(Cursor.Position.X, Cursor.Position.Y);
-		
-		public MainScene(string sceneId) : base(sceneId) { }
 
 		private void CreateModel(OpenGL gl)
 		{

@@ -16,7 +16,9 @@ namespace XEngine.Core
 				var genSceneAttr = type.GetCustomAttributes(typeof(GenerateSceneAttribute), false);
 				if (genSceneAttr.Length == 0) continue;
 				var attr = (GenerateSceneAttribute)genSceneAttr[0];
-				Activator.CreateInstance(type, attr.SceneId);
+				var scene = (Scene)Activator.CreateInstance(type);
+				scene.SceneId = attr.SceneId;
+				Scene.SceneCache.Add(scene.SceneId, scene);
 			}
 		}
 
