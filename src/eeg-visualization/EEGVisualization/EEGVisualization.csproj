@@ -39,6 +39,7 @@
     <Reference Include="GlmNet, Version=0.7.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\GlmNet.0.7.0\lib\net40\GlmNet.dll</HintPath>
     </Reference>
+    <Reference Include="PresentationCore" />
     <Reference Include="SharpGL, Version=2.4.1.2, Culture=neutral, PublicKeyToken=27fc851303210b27, processorArchitecture=MSIL">
       <HintPath>..\packages\SharpGL.2.4.1.2\lib\net40-client\SharpGL.dll</HintPath>
     </Reference>
@@ -72,6 +73,20 @@
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Scripts\Controller.cs" />
+    <Compile Include="Scripts\MainScene.cs" />
+    <Compile Include="XEngine\Core\Camera.cs" />
+    <Compile Include="XEngine\XEngineActivator.cs" />
+    <Compile Include="XEngine\Host.cs" />
+    <Compile Include="XEngine\ManifestResourceManager.cs" />
+    <Compile Include="XEngine\Core\Scene.cs" />
+    <Compile Include="XEngine\Core\SceneManager.cs" />
+    <Compile Include="XEngine\Data\vertex.cs" />
+    <Compile Include="XEngine\Shapes\Cube.cs" />
+    <Compile Include="XEngine\Shapes\GeometricShape.cs" />
+    <Compile Include="XEngine\Shapes\ShapeData.cs" />
+    <Compile Include="XEngine\Shapes\Triangle.cs" />
+    <Compile Include="XEngine\Models\Model.cs" />
     <EmbeddedResource Include="MainForm.resx">
       <DependentUpon>MainForm.cs</DependentUpon>
     </EmbeddedResource>
@@ -96,6 +111,8 @@
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
     <EmbeddedResource Include="Resources\male_head.obj" />
+    <EmbeddedResource Include="Shaders\fragment.glsl" />
+    <EmbeddedResource Include="Shaders\vertex.glsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
@@ -107,9 +124,6 @@
     <EmbeddedResource Include="Resources\electrodes.txt" />
     <EmbeddedResource Include="Resources\voltages.txt" />
   </ItemGroup>
-  <ItemGroup>
-    <Content Include="SharpGL.ico" />
-    <Content Include="SharpGL.png" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

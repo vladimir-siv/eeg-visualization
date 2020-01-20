@@ -57,6 +57,7 @@
 			this.Name = "MainForm";
 			this.ShowIcon = false;
 			this.Text = "EEG Visualization";
+			this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.MainForm_FormClosed);
 			((System.ComponentModel.ISupportInitialize)(this.GLControl)).EndInit();
 			this.ResumeLayout(false);
 
