@@ -15,6 +15,8 @@ using MouseButtons = System.Windows.Forms.MouseButtons;
 
 namespace EEGVisualization.Scripts
 {
+	using EEG;
+
 	[GenerateScene("EEGVisualization.MainScene")]
 	public class MainScene : Scene
 	{
@@ -37,6 +39,13 @@ namespace EEGVisualization.Scripts
 
 		private int EyePositionLocation { get; set; }
 
+		private int ElectrodePositionsLocation { get; set; }
+		private int ElectrodeCountLocation { get; set; }
+		private int ElectrodeIndicesLocation { get; set; }
+		private int ElectrodesUsedCountLocation { get; set; }
+		private int ElectrodeValuesLocation { get; set; }
+		private int ElectrodeMaxDistanceLocation { get; set; }
+
 		private uint[] ArrayIds { get; } = new uint[2];
 		private uint[] ModelBufferIds { get; } = new uint[2];
 		private uint[] UIBufferIds { get; } = new uint[2];
@@ -53,13 +62,15 @@ namespace EEGVisualization.Scripts
 		private vec3 LightSourceColor { get; } = new vec3(1.0f, 1.0f, 1.0f);
 		private float LightSourcePower { get; } = 90.0f; // Watts for instance
 
+		private float ElectrodeMaxDistance { get; set; } = 10.0f;
+
 		private Camera MainCamera { get; } = new Camera(new vec3(-30.0f, 20.0f, 30.0f));
 
 		private vec2 ShapeRotationAngle { get; set; } = new vec2(0.0f, 0.0f);
 		private float Scroll { get; set; } = 0.0f;
 		private vec2 LastMousePosition { get; set; } = new vec2(Cursor.Position.X, Cursor.Position.Y);
 
-		private void CreateSceneData(OpenGL gl)
+		private void LoadSceneData(OpenGL gl)
 		{
 			var modelLoader = Model.Load("male_head");
 			modelLoader.Wait();
@@ -199,17 +210,30 @@ namespace EEGVisualization.Scripts
 			LightSourcePowerLocation = gl.GetUniformLocation(ShaderProgramId, "light_source_power");
 			
 			EyePositionLocation = gl.GetUniformLocation(ShaderProgramId, "eye_position");
+
+			ElectrodePositionsLocation = gl.GetUniformLocation(ShaderProgramId, "electrode_positions");
+			ElectrodeCountLocation = gl.GetUniformLocation(ShaderProgramId, "electrode_count");
+			ElectrodeIndicesLocation = gl.GetUniformLocation(ShaderProgramId, "electrode_indices");
+			ElectrodesUsedCountLocation = gl.GetUniformLocation(ShaderProgramId, "electrodes_used_count");
+			ElectrodeValuesLocation = gl.GetUniformLocation(ShaderProgramId, "electrode_values");
+			ElectrodeMaxDistanceLocation = gl.GetUniformLocation(ShaderProgramId, "electrode_max_distance");
+		}
+
+		private void LoadEEGData(OpenGL gl)
+		{
+			Electrodes.Load().Wait();
+			Voltages.Init().Wait();
 		}
 
 		public override void Init(OpenGLControl control, float width, float height)
 		{
 			control.MouseWheel += (s, e) => Scroll += e.Delta / System.Windows.Forms.SystemInformation.MouseWheelScrollDelta;
-
-			CreateSceneData(control.OpenGL);
+			LoadSceneData(control.OpenGL);
 			BuildShaders(control.OpenGL);
+			LoadEEGData(control.OpenGL);
 		}
 
-		private void UpdateCamera(OpenGLControl control)
+		private void Update(OpenGLControl control)
 		{
 			if (!Host.CurrentApplicationIsActive) return;
 
@@ -244,6 +268,12 @@ namespace EEGVisualization.Scripts
 			Scroll = 0.0f;
 
 			MainCamera.Move(moveDelta);
+
+			// Arrows
+			if (Keyboard.IsKeyDown(Key.Left)) Voltages.Back();
+			if (Keyboard.IsKeyDown(Key.Right)) Voltages.Forward().Wait();
+			if (Keyboard.IsKeyDown(Key.Up)) ElectrodeMaxDistance += 0.25f;
+			if (Keyboard.IsKeyDown(Key.Down)) ElectrodeMaxDistance -= 0.25f;
 		}
 
 		private void LateUpdate(OpenGLControl control)
@@ -258,7 +288,7 @@ namespace EEGVisualization.Scripts
 			gl.Clear(OpenGL.GL_COLOR_BUFFER_BIT | OpenGL.GL_DEPTH_BUFFER_BIT | OpenGL.GL_STENCIL_BUFFER_BIT);
 			gl.Viewport(0, 0, control.Width, control.Height);
 
-			UpdateCamera(control);
+			Update(control);
 			LateUpdate(control);
 
 			// Render Model
@@ -289,6 +319,13 @@ namespace EEGVisualization.Scripts
 			gl.Uniform4(LightSourceColorLocation, LightSourceColor.x, LightSourceColor.y, LightSourceColor.z, 1.0f);
 			gl.Uniform1(LightSourcePowerLocation, LightSourcePower);
 			gl.Uniform4(EyePositionLocation, MainCamera.Position.x, MainCamera.Position.y, MainCamera.Position.z, 1.0f);
+
+			gl.Uniform1(ElectrodePositionsLocation, Electrodes.Count * 3, Electrodes.Data);
+			gl.Uniform1(ElectrodeCountLocation, (uint)Electrodes.Count);
+			gl.Uniform1(ElectrodeIndicesLocation, Voltages.ElectrodeIndices.Length, Voltages.ElectrodeIndices);
+			gl.Uniform1(ElectrodesUsedCountLocation, (uint)Voltages.ElectrodeIndices.Length);
+			gl.Uniform1(ElectrodeValuesLocation, Voltages.Values.Length, Voltages.Values);
+			gl.Uniform1(ElectrodeMaxDistanceLocation, ElectrodeMaxDistance);
 
 			gl.DrawElements(Shape.OpenGLShapeType, Shape.Indices.Length, OpenGL.GL_UNSIGNED_SHORT, IntPtr.Zero);
 
@@ -321,6 +358,7 @@ namespace EEGVisualization.Scripts
 			gl.DeleteVertexArrays(ArrayIds.Length, ArrayIds);
 			gl.UseProgram(0);
 			gl.DeleteProgram(ShaderProgramId);
+			Voltages.Dispose();
 		}
 	}
 }
