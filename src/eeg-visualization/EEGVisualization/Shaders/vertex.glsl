@@ -2,8 +2,8 @@
 
 uniform mat4 project;
 uniform mat4 view;
-uniform mat4 scale;
 uniform mat4 translate;
+uniform mat4 scale;
 uniform mat4 rotate;
 
 in layout(location = 0) vec4 in_position;
@@ -16,7 +16,7 @@ out vec4 normal;
 
 void main(void)
 {
-	position = scale * translate * rotate * in_position;
+	position = translate * scale * rotate * in_position;
 	color = in_color;
 	normal = rotate * in_normal;
 	

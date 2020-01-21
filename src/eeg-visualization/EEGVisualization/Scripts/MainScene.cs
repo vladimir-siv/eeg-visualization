@@ -24,8 +24,8 @@ namespace EEGVisualization.Scripts
 
 		private int ProjectMatrixLocation { get; set; }
 		private int ViewMatrixLocation { get; set; }
-		private int ScaleMatrixLocation { get; set; }
 		private int TranslateMatrixLocation { get; set; }
+		private int ScaleMatrixLocation { get; set; }
 		private int RotateMatrixLocation { get; set; }
 
 		private int AmbientLightColorLocation { get; set; }
@@ -37,12 +37,14 @@ namespace EEGVisualization.Scripts
 
 		private int EyePositionLocation { get; set; }
 
-		private uint[] ArrayIds { get; } = new uint[1];
-		private uint[] BufferIds { get; } = new uint[2];
+		private uint[] ArrayIds { get; } = new uint[2];
+		private uint[] ModelBufferIds { get; } = new uint[2];
+		private uint[] UIBufferIds { get; } = new uint[2];
 
 		#endregion
 
 		private GeometricShape Shape { get; set; }
+		private GeometricShape UI { get; set; }
 
 		private vec3 AmbientLightColor { get; } = new vec3(1.0f, 1.0f, 1.0f);
 		private float AmbientLightPower { get; } = 0.25f;
@@ -57,11 +59,12 @@ namespace EEGVisualization.Scripts
 		private float Scroll { get; set; } = 0.0f;
 		private vec2 LastMousePosition { get; set; } = new vec2(Cursor.Position.X, Cursor.Position.Y);
 
-		private void CreateModel(OpenGL gl)
+		private void CreateSceneData(OpenGL gl)
 		{
 			var modelLoader = Model.Load("male_head");
 			modelLoader.Wait();
 			Shape = modelLoader.Result;
+			UI = new Legend();
 
 			gl.Enable(OpenGL.GL_DEPTH_TEST);
 			gl.Enable(OpenGL.GL_CULL_FACE);
@@ -70,14 +73,15 @@ namespace EEGVisualization.Scripts
 			gl.Clear(OpenGL.GL_COLOR_BUFFER_BIT | OpenGL.GL_DEPTH_BUFFER_BIT | OpenGL.GL_STENCIL_BUFFER_BIT);
 
 			gl.GenVertexArrays(ArrayIds.Length, ArrayIds);
+
+			// Model data
 			gl.BindVertexArray(ArrayIds[0]);
+			gl.GenBuffers(ModelBufferIds.Length, ModelBufferIds);
 
-			gl.GenBuffers(BufferIds.Length, BufferIds);
-
-			gl.BindBuffer(OpenGL.GL_ELEMENT_ARRAY_BUFFER, BufferIds[0]);
+			gl.BindBuffer(OpenGL.GL_ELEMENT_ARRAY_BUFFER, ModelBufferIds[0]);
 			gl.BufferData(OpenGL.GL_ELEMENT_ARRAY_BUFFER, Shape.Indices, OpenGL.GL_STATIC_DRAW);
 
-			gl.BindBuffer(OpenGL.GL_ARRAY_BUFFER, BufferIds[1]);
+			gl.BindBuffer(OpenGL.GL_ARRAY_BUFFER, ModelBufferIds[1]);
 			gl.BufferData(OpenGL.GL_ARRAY_BUFFER, Shape.Data, OpenGL.GL_STATIC_DRAW);
 
 			gl.EnableVertexAttribArray(0);
@@ -86,6 +90,23 @@ namespace EEGVisualization.Scripts
 			gl.VertexAttribPointer(0, Shape.GetAttribSize(0), Shape.GetAttribType(0), Shape.ShouldAttribNormalize(0), Shape.GetAttribStride(0), Shape.GetAttribOffset(0));
 			gl.VertexAttribPointer(1, Shape.GetAttribSize(1), Shape.GetAttribType(1), Shape.ShouldAttribNormalize(1), Shape.GetAttribStride(1), Shape.GetAttribOffset(1));
 			gl.VertexAttribPointer(2, Shape.GetAttribSize(2), Shape.GetAttribType(2), Shape.ShouldAttribNormalize(2), Shape.GetAttribStride(2), Shape.GetAttribOffset(2));
+
+			// UI data
+			gl.BindVertexArray(ArrayIds[1]);
+			gl.GenBuffers(UIBufferIds.Length, UIBufferIds);
+
+			gl.BindBuffer(OpenGL.GL_ELEMENT_ARRAY_BUFFER, UIBufferIds[0]);
+			gl.BufferData(OpenGL.GL_ELEMENT_ARRAY_BUFFER, UI.Indices, OpenGL.GL_STATIC_DRAW);
+
+			gl.BindBuffer(OpenGL.GL_ARRAY_BUFFER, UIBufferIds[1]);
+			gl.BufferData(OpenGL.GL_ARRAY_BUFFER, UI.Data, OpenGL.GL_STATIC_DRAW);
+
+			gl.EnableVertexAttribArray(0);
+			gl.EnableVertexAttribArray(1);
+			gl.EnableVertexAttribArray(2);
+			gl.VertexAttribPointer(0, UI.GetAttribSize(0), UI.GetAttribType(0), UI.ShouldAttribNormalize(0), UI.GetAttribStride(0), UI.GetAttribOffset(0));
+			gl.VertexAttribPointer(1, UI.GetAttribSize(1), UI.GetAttribType(1), UI.ShouldAttribNormalize(1), UI.GetAttribStride(1), UI.GetAttribOffset(1));
+			gl.VertexAttribPointer(2, UI.GetAttribSize(2), UI.GetAttribType(2), UI.ShouldAttribNormalize(2), UI.GetAttribStride(2), UI.GetAttribOffset(2));
 		}
 
 		private void BuildShaders(OpenGL gl)
@@ -166,8 +187,8 @@ namespace EEGVisualization.Scripts
 
 			ProjectMatrixLocation = gl.GetUniformLocation(ShaderProgramId, "project");
 			ViewMatrixLocation = gl.GetUniformLocation(ShaderProgramId, "view");
-			ScaleMatrixLocation = gl.GetUniformLocation(ShaderProgramId, "scale");
 			TranslateMatrixLocation = gl.GetUniformLocation(ShaderProgramId, "translate");
+			ScaleMatrixLocation = gl.GetUniformLocation(ShaderProgramId, "scale");
 			RotateMatrixLocation = gl.GetUniformLocation(ShaderProgramId, "rotate");
 			
 			AmbientLightColorLocation = gl.GetUniformLocation(ShaderProgramId, "ambient_light_color");
@@ -184,7 +205,7 @@ namespace EEGVisualization.Scripts
 		{
 			control.MouseWheel += (s, e) => Scroll += e.Delta / System.Windows.Forms.SystemInformation.MouseWheelScrollDelta;
 
-			CreateModel(control.OpenGL);
+			CreateSceneData(control.OpenGL);
 			BuildShaders(control.OpenGL);
 		}
 
@@ -240,22 +261,26 @@ namespace EEGVisualization.Scripts
 			UpdateCamera(control);
 			LateUpdate(control);
 
+			// Render Model
+			gl.BindVertexArray(ArrayIds[0]);
+
 			var project = glm.perspective(+60.0f * (float)Math.PI / 180.0f, (float)control.Width / (float)control.Height, +0.1f, +100.0f);
 			var view = MainCamera.WorldToView;
-
-			var scale = glm.scale(mat4.identity(), new vec3(1.0f, 1.0f, 1.0f));
 			var translate = glm.translate(mat4.identity(), new vec3(+0.0f, +0.0f, +0.0f));
+			var scale = glm.scale(mat4.identity(), new vec3(1.0f, 1.0f, 1.0f));
 			var rotate = glm.rotate
 			(
-				glm.rotate(mat4.identity(),
-					ShapeRotationAngle.y * (float)Math.PI / 180.0f, new vec3(+0.0f, +1.0f, +0.0f)),
+				glm.rotate
+				(
+					ShapeRotationAngle.y * (float)Math.PI / 180.0f, new vec3(+0.0f, +1.0f, +0.0f)
+				),
 					ShapeRotationAngle.x * (float)Math.PI / 180.0f, new vec3(+1.0f, +0.0f, +0.0f)
 			);
 			
 			gl.UniformMatrix4(ProjectMatrixLocation, 1, false, project.to_array());
 			gl.UniformMatrix4(ViewMatrixLocation, 1, false, view.to_array());
-			gl.UniformMatrix4(ScaleMatrixLocation, 1, false, scale.to_array());
 			gl.UniformMatrix4(TranslateMatrixLocation, 1, false, translate.to_array());
+			gl.UniformMatrix4(ScaleMatrixLocation, 1, false, scale.to_array());
 			gl.UniformMatrix4(RotateMatrixLocation, 1, false, rotate.to_array());
 
 			gl.Uniform4(AmbientLightColorLocation, AmbientLightColor.x, AmbientLightColor.y, AmbientLightColor.z, 1.0f);
@@ -266,12 +291,33 @@ namespace EEGVisualization.Scripts
 			gl.Uniform4(EyePositionLocation, MainCamera.Position.x, MainCamera.Position.y, MainCamera.Position.z, 1.0f);
 
 			gl.DrawElements(Shape.OpenGLShapeType, Shape.Indices.Length, OpenGL.GL_UNSIGNED_SHORT, IntPtr.Zero);
+
+			// Render UI
+			gl.BindVertexArray(ArrayIds[1]);
+
+			var identity = mat4.identity();
+
+			gl.UniformMatrix4(ProjectMatrixLocation, 1, false, identity.to_array());
+			gl.UniformMatrix4(ViewMatrixLocation, 1, false, identity.to_array());
+			gl.UniformMatrix4(TranslateMatrixLocation, 1, false, identity.to_array());
+			gl.UniformMatrix4(ScaleMatrixLocation, 1, false, identity.to_array());
+			gl.UniformMatrix4(RotateMatrixLocation, 1, false, identity.to_array());
+
+			gl.Uniform4(AmbientLightColorLocation, 1.0f, 1.0f, 1.0f, 1.0f);
+			gl.Uniform1(AmbientLightPowerLocation, 1.0f);
+			gl.Uniform4(LightSourcePositionLocation, LightSourcePosition.x, LightSourcePosition.y, LightSourcePosition.z, 1.0f);
+			gl.Uniform4(LightSourceColorLocation, 0.0f, 0.0f, 0.0f, 1.0f);
+			gl.Uniform1(LightSourcePowerLocation, 0.0f);
+			gl.Uniform4(EyePositionLocation, MainCamera.Position.x, MainCamera.Position.y, MainCamera.Position.z, 1.0f);
+
+			gl.DrawElements(UI.OpenGLShapeType, UI.Indices.Length, OpenGL.GL_UNSIGNED_SHORT, IntPtr.Zero);
 		}
 
 		public override void Exit(OpenGLControl control)
 		{
 			var gl = control.OpenGL;
-			gl.DeleteBuffers(BufferIds.Length, BufferIds);
+			gl.DeleteBuffers(ModelBufferIds.Length, ModelBufferIds);
+			gl.DeleteBuffers(UIBufferIds.Length, UIBufferIds);
 			gl.DeleteVertexArrays(ArrayIds.Length, ArrayIds);
 			gl.UseProgram(0);
 			gl.DeleteProgram(ShaderProgramId);
