@@ -60,7 +60,7 @@ namespace EEGVisualization.Scripts
 		
 		private vec3 LightSourcePosition { get; } = new vec3(-15.0f, 40.0f, 30.0f);
 		private vec3 LightSourceColor { get; } = new vec3(1.0f, 1.0f, 1.0f);
-		private float LightSourcePower { get; } = 90.0f; // Watts for instance
+		private float LightSourcePower { get; } = 60.0f; // Watts for instance
 
 		private float ElectrodeMaxDistance { get; set; } = 10.0f;
 
@@ -313,12 +313,12 @@ namespace EEGVisualization.Scripts
 			gl.UniformMatrix4(ScaleMatrixLocation, 1, false, scale.to_array());
 			gl.UniformMatrix4(RotateMatrixLocation, 1, false, rotate.to_array());
 
-			gl.Uniform4(AmbientLightColorLocation, AmbientLightColor.x, AmbientLightColor.y, AmbientLightColor.z, 1.0f);
+			gl.Uniform3(AmbientLightColorLocation, AmbientLightColor.x, AmbientLightColor.y, AmbientLightColor.z);
 			gl.Uniform1(AmbientLightPowerLocation, AmbientLightPower);
-			gl.Uniform4(LightSourcePositionLocation, LightSourcePosition.x, LightSourcePosition.y, LightSourcePosition.z, 1.0f);
-			gl.Uniform4(LightSourceColorLocation, LightSourceColor.x, LightSourceColor.y, LightSourceColor.z, 1.0f);
+			gl.Uniform3(LightSourcePositionLocation, LightSourcePosition.x, LightSourcePosition.y, LightSourcePosition.z);
+			gl.Uniform3(LightSourceColorLocation, LightSourceColor.x, LightSourceColor.y, LightSourceColor.z);
 			gl.Uniform1(LightSourcePowerLocation, LightSourcePower);
-			gl.Uniform4(EyePositionLocation, MainCamera.Position.x, MainCamera.Position.y, MainCamera.Position.z, 1.0f);
+			gl.Uniform3(EyePositionLocation, MainCamera.Position.x, MainCamera.Position.y, MainCamera.Position.z);
 
 			gl.Uniform1(ElectrodePositionsLocation, Electrodes.Count * 3, Electrodes.Data);
 			gl.Uniform1(ElectrodeCountLocation, (uint)Electrodes.Count);
@@ -340,12 +340,12 @@ namespace EEGVisualization.Scripts
 			gl.UniformMatrix4(ScaleMatrixLocation, 1, false, identity.to_array());
 			gl.UniformMatrix4(RotateMatrixLocation, 1, false, identity.to_array());
 
-			gl.Uniform4(AmbientLightColorLocation, 1.0f, 1.0f, 1.0f, 1.0f);
+			gl.Uniform3(AmbientLightColorLocation, 1.0f, 1.0f, 1.0f);
 			gl.Uniform1(AmbientLightPowerLocation, 1.0f);
-			gl.Uniform4(LightSourcePositionLocation, LightSourcePosition.x, LightSourcePosition.y, LightSourcePosition.z, 1.0f);
-			gl.Uniform4(LightSourceColorLocation, 0.0f, 0.0f, 0.0f, 1.0f);
+			gl.Uniform3(LightSourcePositionLocation, LightSourcePosition.x, LightSourcePosition.y, LightSourcePosition.z);
+			gl.Uniform3(LightSourceColorLocation, 0.0f, 0.0f, 0.0f);
 			gl.Uniform1(LightSourcePowerLocation, 0.0f);
-			gl.Uniform4(EyePositionLocation, MainCamera.Position.x, MainCamera.Position.y, MainCamera.Position.z, 1.0f);
+			gl.Uniform3(EyePositionLocation, MainCamera.Position.x, MainCamera.Position.y, MainCamera.Position.z);
 
 			gl.DrawElements(UI.OpenGLShapeType, UI.Indices.Length, OpenGL.GL_UNSIGNED_SHORT, IntPtr.Zero);
 		}
