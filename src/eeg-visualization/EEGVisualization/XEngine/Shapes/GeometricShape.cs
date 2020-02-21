@@ -37,7 +37,7 @@ namespace XEngine.Shapes
 		}
 		public virtual IntPtr GetAttribOffset(uint index)
 		{
-			return new IntPtr(index * vertex.ByteSize / vertex.AttribSize);
+			return new IntPtr(index * vertex.ByteSize / vertex.AttribCount);
 		}
 	}
 }
