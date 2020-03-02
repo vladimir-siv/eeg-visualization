@@ -36,22 +36,26 @@ void main(void)
 {
 	const float ylimit = 4.0f;
 	out_color = vec4(0.0f, 0.0f, 0.0f, 0.0f);
-
+	
 	// EEG
-	float hue = 0.75f;
 	vec3 model_vector = normalize(model_position);
+	float total_distance = 0.0f;
+	float total_value = 0.0f;
+	
 	for (int i = 0; i < electrodes_used_count; ++i)
 	{
 		uint index = electrode_indices[i] * 3;
 		vec3 electrode_vector = vec3(electrode_positions[index + 0], electrode_positions[index + 1], electrode_positions[index + 2]);
-		float angle = acos(dot(model_vector, electrode_vector)) * 180.0f / PI;
-
-		float value = (electrode_values[i] + 50.0f) / 100.0f;
-		hue -= int(angle < electrode_max_distance) * value * electrode_max_distance / (5.0f * angle);
+		float distance = max(electrode_max_distance - (acos(dot(model_vector, electrode_vector)) * 180.0f / PI), 0.0f);
+		total_distance += distance;
+		total_value += electrode_values[i] * distance;
 	}
 	
-	out_color += int(model_position.y >= ylimit) * vec4(hsv2rgb(vec3(clamp(hue, 0.0f, 0.75f), 1.0f, 1.0f)), 1.0f);
-
+	total_distance += int(total_distance == 0.0f);
+	float voltage = (total_value / total_distance + 50.0f) / 100.0f;
+	float hue = mix(0.75f, 0.0f, voltage);
+	out_color += int(model_position.y >= ylimit) * vec4(hsv2rgb(vec3(hue, 1.0f, 1.0f)), 1.0f);
+	
 	// Phong
 	vec3 normal_vector = normalize(normal);
 	vec3 light_vector = normalize(light_source_position - position);

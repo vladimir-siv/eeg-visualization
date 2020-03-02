@@ -62,13 +62,15 @@ namespace EEGVisualization.Scripts
 		private vec3 LightSourceColor { get; } = new vec3(1.0f, 1.0f, 1.0f);
 		private float LightSourcePower { get; } = 60.0f; // Watts for instance
 
-		private float ElectrodeMaxDistance { get; set; } = 10.0f;
+		private float ElectrodeMaxDistance { get; set; } = 50.0f;
 
 		private Camera MainCamera { get; } = new Camera(new vec3(-30.0f, 20.0f, 30.0f));
 
 		private vec2 ShapeRotationAngle { get; set; } = new vec2(0.0f, 0.0f);
 		private float Scroll { get; set; } = 0.0f;
 		private vec2 LastMousePosition { get; set; } = new vec2(Cursor.Position.X, Cursor.Position.Y);
+		private bool LastKeyLeft { get; set; } = false;
+		private bool LastKeyRight { get; set; } = false;
 
 		private void LoadSceneData(OpenGL gl)
 		{
@@ -81,7 +83,7 @@ namespace EEGVisualization.Scripts
 			gl.Enable(OpenGL.GL_CULL_FACE);
 
 			gl.ClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-			gl.Clear(OpenGL.GL_COLOR_BUFFER_BIT | OpenGL.GL_DEPTH_BUFFER_BIT | OpenGL.GL_STENCIL_BUFFER_BIT);
+			gl.Clear(OpenGL.GL_COLOR_BUFFER_BIT | OpenGL.GL_DEPTH_BUFFER_BIT);
 
 			gl.GenVertexArrays(ArrayIds.Length, ArrayIds);
 
@@ -270,10 +272,14 @@ namespace EEGVisualization.Scripts
 			MainCamera.Move(moveDelta);
 
 			// Arrows
-			if (Keyboard.IsKeyDown(Key.Left)) Voltages.Back();
-			if (Keyboard.IsKeyDown(Key.Right)) Voltages.Forward().Wait();
+			var keyLeft = Keyboard.IsKeyDown(Key.Left);
+			var keyRight = Keyboard.IsKeyDown(Key.Right);
+			if (!LastKeyLeft && keyLeft) Voltages.Back();
+			if (!LastKeyRight && keyRight) Voltages.Forward();
 			if (Keyboard.IsKeyDown(Key.Up)) ElectrodeMaxDistance += 0.25f;
 			if (Keyboard.IsKeyDown(Key.Down)) ElectrodeMaxDistance -= 0.25f;
+			LastKeyLeft = keyLeft;
+			LastKeyRight = keyRight;
 		}
 
 		private void LateUpdate(OpenGLControl control)
@@ -285,7 +291,7 @@ namespace EEGVisualization.Scripts
 		{
 			var gl = control.OpenGL;
 
-			gl.Clear(OpenGL.GL_COLOR_BUFFER_BIT | OpenGL.GL_DEPTH_BUFFER_BIT | OpenGL.GL_STENCIL_BUFFER_BIT);
+			gl.Clear(OpenGL.GL_COLOR_BUFFER_BIT | OpenGL.GL_DEPTH_BUFFER_BIT);
 			gl.Viewport(0, 0, control.Width, control.Height);
 
 			Update(control);
@@ -358,7 +364,6 @@ namespace EEGVisualization.Scripts
 			gl.DeleteVertexArrays(ArrayIds.Length, ArrayIds);
 			gl.UseProgram(0);
 			gl.DeleteProgram(ShaderProgramId);
-			Voltages.Dispose();
 		}
 	}
 }
