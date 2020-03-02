@@ -67,6 +67,7 @@ namespace EEGVisualization.Scripts
 		private Camera MainCamera { get; } = new Camera(new vec3(-30.0f, 20.0f, 30.0f));
 
 		private vec2 ShapeRotationAngle { get; set; } = new vec2(0.0f, 0.0f);
+		private float ShapeScale { get; set; } = 1.0f;
 		private float Scroll { get; set; } = 0.0f;
 		private vec2 LastMousePosition { get; set; } = new vec2(Cursor.Position.X, Cursor.Position.Y);
 		private bool LastKeyLeft { get; set; } = false;
@@ -266,7 +267,7 @@ namespace EEGVisualization.Scripts
 			if (Control.MouseButtons.HasFlag(MouseButtons.XButton1)) moveDelta.y -= 1.0f;
 			if (Control.MouseButtons.HasFlag(MouseButtons.XButton2)) moveDelta.y += 1.0f;
 
-			moveDelta.z -= Scroll;
+			ShapeScale += Scroll / 10.0f;
 			Scroll = 0.0f;
 
 			MainCamera.Move(moveDelta);
@@ -303,7 +304,7 @@ namespace EEGVisualization.Scripts
 			var project = glm.perspective(+60.0f * (float)Math.PI / 180.0f, (float)control.Width / (float)control.Height, +0.1f, +100.0f);
 			var view = MainCamera.WorldToView;
 			var translate = glm.translate(mat4.identity(), new vec3(+0.0f, +0.0f, +0.0f));
-			var scale = glm.scale(mat4.identity(), new vec3(1.0f, 1.0f, 1.0f));
+			var scale = glm.scale(mat4.identity(), new vec3(ShapeScale, ShapeScale, ShapeScale));
 			var rotate = glm.rotate
 			(
 				glm.rotate
